@@ -7,6 +7,9 @@
 //
 
 import UIKit
+var cachedKeyboardView:KeyboardView? = nil
+var cachedKeyboard = 0
+//var cachedKeyboardViewController:UIInputViewController? = nil
 
 public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate, KeyboardViewDatasource {
 
@@ -14,20 +17,23 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
         case Alphabet
         case NumberSymbols1
         case NumberSymbols2
+        case Wubi
     }
     
     public var keyboardView: KeyboardView!
     public var textDocument: KeyboardTextDocument!
     public var autoShifted: Bool = true
-    public var mode = Mode.Alphabet
+    public var mode = Mode.Wubi
 
     public var shouldLayoutKeyboardConstraintsAutomatically: Bool = true
     
     private var layoutConstrained: Bool = false
     private var spaceWaiting: Bool = false
     
+    
     public override func viewDidLoad() {
         super.viewDidLoad()
+        //println(cachedKeyboardView)
         
         let proxy = self.textDocumentProxy as UITextDocumentProxy
         
@@ -35,11 +41,21 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
 
         setupKeyboard()
         self.keyboardView.reloadKeys()
+        //if(cachedKeyboard == 0){
+        //    self.keyboardView.reloadKeys()
+        //}else{
+        //    println(self.keyboardView.keyRows[0].count)
+        //}
+        //cachedKeyboard = 1
     }
     
     /// Setup a view with the standard defaults
     func setupKeyboard() {
         
+        //if((cachedKeyboardView) == nil){
+        //    cachedKeyboardView = KeyboardView()
+        //}
+        //self.keyboardView = cachedKeyboardView
         self.keyboardView = KeyboardView()
         self.keyboardView.delegate = self
         self.keyboardView.datasource = self
@@ -48,6 +64,9 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
         
         self.view.addSubview(keyboardView)
         self.view.setNeedsUpdateConstraints()
+        //if(cachedKeyboard == 0){
+        //    self.view.setNeedsUpdateConstraints()
+        //}
     }
     
     ///MARK: Keyboard Datasource
@@ -64,6 +83,7 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
     }
     
     ///MARK: View Layout
+    //for test
     public override func updateViewConstraints() {
         // Add custom view sizing constraints here
         super.updateViewConstraints()
@@ -95,14 +115,14 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
         // The app has just changed the document's contents, the document context has been updated.
         
         //var textToTranslate = getProperTextFrom(textInput)
-        if textDocument.text() == "" {
+        if textDocument.text() == "" && self.mode == .Alphabet {
             autoShifted = true
         }
     }
     
     ///MARK: Key Actions
     public func keyPressed(key: KeyboardKeyView) {
-        UIDevice.currentDevice().playInputClick()
+        //UIDevice.currentDevice().playInputClick()
         spaceWaiting = false
         
         if let text = key.outputText {
@@ -127,7 +147,7 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
      Default action is to delete the last character.
      */
     public func backspaceKeyPressed(key: KeyboardKeyView) {
-        UIDevice.currentDevice().playInputClick()
+        //UIDevice.currentDevice().playInputClick()
         spaceWaiting = false
 
         textDocument.deleteBackward()
@@ -148,7 +168,7 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
      Default action is to insert one blank "space" character.
     */
     public func spaceKeyPressed(key: KeyboardKeyView) {
-        UIDevice.currentDevice().playInputClick()
+        //UIDevice.currentDevice().playInputClick()
 
         if let lastChar = textDocument.lastCharacter() {
             if contains(["!", "?", "."], lastChar) {
@@ -172,37 +192,63 @@ public class KeyboardViewController: UIInputViewController, KeyboardViewDelegate
     }
     
     public func shiftKeyPressed(key: KeyboardKeyView) {
-        UIDevice.currentDevice().playInputClick()
+        //UIDevice.currentDevice().playInputClick()
         
         keyboardView.toggleShift()
         self.autoShifted = !self.autoShifted
     }
     
     public func returnKeyPressed(key: KeyboardKeyView) {
-        UIDevice.currentDevice().playInputClick()
+        //UIDevice.currentDevice().playInputClick()
 
         textDocument.insertText("\n")
     }
     
     public func modeChangeKeyPressed(key: KeyboardKeyView) {
-        UIDevice.currentDevice().playInputClick()
-        if self.mode == .Alphabet {
+        //UIDevice.currentDevice().playInputClick()
+        if self.mode == .Wubi {
+            self.mode = .NumberSymbols1
+        }else if self.mode == .Alphabet {
             self.mode = .NumberSymbols1
         } else if self.mode == .NumberSymbols1 || self.mode == .NumberSymbols2 {
-            self.mode = .Alphabet
+            self.mode = .Wubi
+            self.autoShifted = false
         }
         
         self.keyboardView.reloadKeys()
     }
     
+    public func backspaceKeyUp(key: KeyboardKeyView) {
+    }
     public func nextKeyboardKeyPressed(key: KeyboardKeyView) {
-        UIDevice.currentDevice().playInputClick()
+        //UIDevice.currentDevice().playInputClick()
 
         self.advanceToNextInputMode()
     }
+    
+    deinit {
+        //self.keyboardView.removeFromSuperview()
+    }
+    
+    //override public func alloc() -> KeyboardViewController! {
+    //    return KeyboardViewController()
+    //}
+    //override public func `self`() -> self! {
+    //    if((cachedKeyboardViewController) == nil){
+    //        return super.`self`() as
+    //    }
+    //}
     
     public override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated
     }
+    //override public func viewDidLayoutSubviews() {
+    //    super.viewDidLayoutSubviews()
+    //    self.keyboardView.setupLayout()
+    //}
+    //override public func viewWillAppear(animated: Bool) {
+    //    super.viewWillAppear(animated)
+    //    self.keyboardView.setupLayout()
+    //}
 }

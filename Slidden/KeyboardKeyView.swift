@@ -8,7 +8,7 @@
 
 import UIKit
 
-let keyFont = UIFont(name: "HelveticaNeue", size: 22.0)
+let keyFont = UIFont(name: "HelveticaNeue", size: 20.0)
 
 public class KeyboardKeyView: UIControl {
     public enum KeyType {
@@ -22,6 +22,8 @@ public class KeyboardKeyView: UIControl {
         case Space
         case Return
         case None
+        case BlankType1
+        case WubiKeyType
     }
     
     public var type: KeyType! {
@@ -31,10 +33,10 @@ public class KeyboardKeyView: UIControl {
     }
     public var keyCap: String? {
         didSet {
-            self.redrawText()
+            //self.redrawText()
         }
     }
-
+    
     public var outputText: String?
     
     public var shifted: Bool = false {
@@ -49,14 +51,19 @@ public class KeyboardKeyView: UIControl {
     
     public var color: UIColor? {
         didSet {
-            self.backgroundColor = color
+            if((self.type) != nil && self.type != .BlankType1){
+                //self.backgroundColor = color
+                self.internalView.backgroundColor = color
+            }
         }
     }
     
     public var textColor: UIColor? {
         didSet {
             self.textLabel.textColor = textColor!
-            recolor()
+            if((self.type) != nil && self.type != .BlankType1){
+                recolor()
+            }
         }
     }
     
@@ -77,7 +84,7 @@ public class KeyboardKeyView: UIControl {
     
     public var imageView: UIImageView = UIImageView()
     
-    var contentInset: UIEdgeInsets?
+    var contentInset: UIEdgeInsets? = UIEdgeInsetsMake(6, 2, 6, 2)
     var borderColor: UIColor?
     var borderRadius: Float?
     
@@ -108,27 +115,41 @@ public class KeyboardKeyView: UIControl {
         self.type = type
         self.outputText = outputText
         self.keyCap = keyCap
-        
         setup()
     }
     
     func setup() {
-        self.addTarget(self, action: "pressed", forControlEvents: .TouchDown)
-        self.addTarget(self, action: "depressed", forControlEvents: .TouchUpInside)
-        self.addTarget(self, action: "cancelled", forControlEvents: .TouchUpOutside)
-        self.addTarget(self, action: "cancelled", forControlEvents: .TouchCancel)
-        self.addTarget(self, action: "cancelled", forControlEvents: .TouchDragExit)
-
         self.setTranslatesAutoresizingMaskIntoConstraints(false)
         self.internalView.setTranslatesAutoresizingMaskIntoConstraints(false)
-        self.textLabel.setTranslatesAutoresizingMaskIntoConstraints(false)
+        //self.textLabel.setTranslatesAutoresizingMaskIntoConstraints(false)
+        if((self.type) != nil && self.type != .BlankType1){
+            self.addTarget(self, action: "pressed", forControlEvents: .TouchDown)
+            self.addTarget(self, action: "depressed", forControlEvents: .TouchUpInside)
+            self.addTarget(self, action: "cancelled", forControlEvents: .TouchUpOutside)
+            self.addTarget(self, action: "cancelled", forControlEvents: .TouchCancel)
+            self.addTarget(self, action: "cancelled", forControlEvents: .TouchDragExit)
+            redrawText()
+            
+            self.contentInset = UIEdgeInsetsMake(6, 2, 6, 2)
+            
+            if(UIDevice.currentDevice().userInterfaceIdiom == .Pad){
+                self.contentInset = UIEdgeInsetsMake(10, 5, 5, 2)
+            }
+            
+            //self.internalView.backgroundColor = UIColor.redColor()
+            internalView.layer.cornerRadius = 5; // this value vary as per your desire
+            internalView.clipsToBounds = true;
+            internalView.userInteractionEnabled = false
+            self.addSubview(self.internalView)
+            //self.addConstraints(self.constraintsForContentView(internalView))
+        }
         
         setupDefaultLabel()
-        redrawText()
+        
     }
     
     private func setupDefaultLabel() {
-        //        self.textLabel.backgroundColor = UIColor.whiteColor()
+                //self.textLabel.backgroundColor = UIColor.greenColor()
         self.textLabel.textAlignment = .Center
         self.textLabel.textColor = UIColor.whiteColor()
         self.textLabel.font = keyFont
@@ -137,70 +158,80 @@ public class KeyboardKeyView: UIControl {
     }
     
     private func setupType(type: KeyType) {
-//        if (self.image != nil) {
-//            return
-//        }
-//        
-//        switch type {
-//        case .Shift:
-//            self.image = UIImage(named: "Shift")
-//        case .KeyboardChange:
-//            self.image = UIImage(named: "NextKeyboard")
-//        default:
-//            self.image = nil
-//        }
+        //        if (self.image != nil) {
+        //            return
+        //        }
+        //        
+        //        switch type {
+        //        case .Shift:
+        //            self.image = UIImage(named: "Shift")
+        //        case .KeyboardChange:
+        //            self.image = UIImage(named: "NextKeyboard")
+        //        default:
+        //            self.image = nil
+        //        }
+    }
+    
+    public func setupLayout(){
+        self.textLabel.frame = CGRectMake(self.contentInset!.left, self.contentInset!.top, self.frame.width - self.contentInset!.left - self.contentInset!.right, self.frame.height - self.contentInset!.top - self.contentInset!.bottom)
+        self.internalView.frame = CGRectMake(self.contentInset!.left, self.contentInset!.top, self.frame.width - self.contentInset!.left - self.contentInset!.right, self.frame.height - self.contentInset!.top - self.contentInset!.bottom)
+        self.imageView.frame = CGRectMake(self.contentInset!.left, self.contentInset!.top, self.frame.width - self.contentInset!.left - self.contentInset!.right, self.frame.height - self.contentInset!.top - self.contentInset!.bottom)
     }
     
     ///MARK: Layout
-    public override func updateConstraints() {
-        super.updateConstraints()
-        
-        if !layoutConstrained {
-            
-            // Layout label's constraints
-            self.addConstraints(self.constraintsForContentView(textLabel))
-            
-            layoutConstrained = true
-        }
-    }
+    //public override func updateConstraints() {
+    //    super.updateConstraints()
+    //    
+    //    
+    //    if !layoutConstrained {
+    //        
+    //        // Layout label's constraints
+    //        self.addConstraints(self.constraintsForContentView(textLabel))
+    //        
+    //        layoutConstrained = true
+    //    }
+    //}
     
-    private func constraintsForContentView(view: UIView) -> [NSLayoutConstraint] {
-        var ret: [NSLayoutConstraint] = []
-        view.setTranslatesAutoresizingMaskIntoConstraints(false)
-        
-        var top: CGFloat = 0.0
-        var left: CGFloat = 0.0
-        var bottom: CGFloat = 0.0
-        var right: CGFloat = 0.0
-        
-        if let insets = contentInset {
-            top = insets.top
-            left = insets.left
-            bottom = insets.bottom
-            right = insets.right
-        }
-        
-        let leftC = NSLayoutConstraint(item: view, attribute: NSLayoutAttribute.Left, relatedBy: NSLayoutRelation.Equal, toItem: self, attribute: NSLayoutAttribute.Left, multiplier: 1.0, constant: left)
-        let topC = NSLayoutConstraint(item: view, attribute: NSLayoutAttribute.Top, relatedBy: NSLayoutRelation.Equal, toItem: self, attribute: NSLayoutAttribute.Top, multiplier: 1.0, constant: top)
-        let rightC = NSLayoutConstraint(item: view, attribute: NSLayoutAttribute.Right, relatedBy: NSLayoutRelation.Equal, toItem: self, attribute: NSLayoutAttribute.Right, multiplier: 1.0, constant: -bottom)
-        let bottomC = NSLayoutConstraint(item: view, attribute: NSLayoutAttribute.Bottom, relatedBy: NSLayoutRelation.Equal, toItem: self, attribute: NSLayoutAttribute.Bottom, multiplier: 1.0, constant: -right)
-        
-        ret += [leftC, topC, rightC, bottomC]
-        
-        return ret
-    }
+    //private func constraintsForContentView(view: UIView) -> [NSLayoutConstraint] {
+    //    var ret: [NSLayoutConstraint] = []
+    //    view.setTranslatesAutoresizingMaskIntoConstraints(false)
+    //    
+    //    var top: CGFloat = 0.0
+    //    var left: CGFloat = 0.0
+    //    var bottom: CGFloat = 0.0
+    //    var right: CGFloat = 0.0
+    //    
+    //    if let insets = contentInset {
+    //        top = insets.top
+    //        left = insets.left
+    //        bottom = insets.bottom
+    //        right = insets.right
+    //    }
+    //    
+    //    let leftC = NSLayoutConstraint(item: view, attribute: NSLayoutAttribute.Left, relatedBy: NSLayoutRelation.Equal, toItem: self, attribute: NSLayoutAttribute.Left, multiplier: 1.0, constant: left)
+    //    let topC = NSLayoutConstraint(item: view, attribute: NSLayoutAttribute.Top, relatedBy: NSLayoutRelation.Equal, toItem: self, attribute: NSLayoutAttribute.Top, multiplier: 1.0, constant: top)
+    //    let rightC = NSLayoutConstraint(item: view, attribute: NSLayoutAttribute.Right, relatedBy: NSLayoutRelation.Equal, toItem: self, attribute: NSLayoutAttribute.Right, multiplier: 1.0, constant: -bottom)
+    //    let bottomC = NSLayoutConstraint(item: view, attribute: NSLayoutAttribute.Bottom, relatedBy: NSLayoutRelation.Equal, toItem: self, attribute: NSLayoutAttribute.Bottom, multiplier: 1.0, constant: -right)
+    //    
+    //    ret += [leftC, topC, rightC, bottomC]
+    //    
+    //    return ret
+    //}
     
     func depressed() {
-        self.backgroundColor = color
+        //self.backgroundColor = color
+        self.internalView.backgroundColor = color
     }
     
     func cancelled() {
-        self.backgroundColor = color
+        //self.backgroundColor = color
+        self.internalView.backgroundColor = color
     }    
     
     func pressed() {
         if selectedColor != nil {
-            self.backgroundColor = selectedColor
+            //self.backgroundColor = selectedColor
+            self.internalView.backgroundColor = selectedColor
         }
     }
     
@@ -215,19 +246,19 @@ public class KeyboardKeyView: UIControl {
     
     private func redrawImage() {
         let endImage = (self.shouldColorImage) ? recolorImage(image?, color: textColor?) : image?
-        
-//        if let img = endImage {
-//            self.imageView.image = img
-//            self.textLabel.hidden = true
-//            self.addSubview(self.imageView)
-//            self.imageView.setTranslatesAutoresizingMaskIntoConstraints(false)
-//            self.addConstraints(constraintsForContentView(self.imageView))
-//            self.setNeedsUpdateConstraints()
-//        } else {
-//            self.imageView.removeConstraints(self.imageView.constraints())
-//            self.textLabel.hidden = false
-//            self.setNeedsUpdateConstraints()
-//        }
+        if let img = endImage {
+        //if true {
+            self.imageView.image = img
+            self.textLabel.hidden = true
+            self.addSubview(self.imageView)
+            //self.imageView.setTranslatesAutoresizingMaskIntoConstraints(false)
+            //self.addConstraints(constraintsForContentView(self.imageView))
+            self.setNeedsUpdateConstraints()
+        } else {
+            self.imageView.removeConstraints(self.imageView.constraints())
+            self.textLabel.hidden = false
+            self.setNeedsUpdateConstraints()
+        }
     }
     
     private func recolor() {
@@ -258,5 +289,9 @@ public class KeyboardKeyView: UIControl {
             }
         }
         return nil
+    }
+    override public func layoutSubviews() {
+        super.layoutSubviews()
+        self.setupLayout()
     }
 }

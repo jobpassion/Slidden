@@ -21,11 +21,13 @@ public protocol KeyboardViewDelegate {
     optional func keyPressed(key: KeyboardKeyView)
     optional func specialKeyPressed(key: KeyboardKeyView)
     optional func backspaceKeyPressed(key: KeyboardKeyView)
+    optional func backspaceKeyUp(key: KeyboardKeyView)
     optional func spaceKeyPressed(key: KeyboardKeyView)
     optional func shiftKeyPressed(key: KeyboardKeyView)
     optional func returnKeyPressed(key: KeyboardKeyView)
     optional func modeChangeKeyPressed(key: KeyboardKeyView)
     optional func nextKeyboardKeyPressed(key: KeyboardKeyView)
+    optional func keyClickSound()
 }
 
 public class KeyboardView: UIView {
@@ -79,20 +81,92 @@ public class KeyboardView: UIView {
         }
         
         layoutConstrained = false
-        self.setNeedsUpdateConstraints()
+        //self.setNeedsUpdateConstraints()
+        //self.setupLayout()
+        //self.setNeedsLayout()
     }
     
     public func reloadKeyAtIndexpath(indexPath: NSIndexPath) {
         
     }
+    var layoutCount = 0
+    
+    public func setupLayout(){
+        //layoutCount = layoutCount + 1
+        //if layoutCount < 3{
+        //    return
+        //}
+        
+            var lastRowView: UIView? = nil
+            var keyboardHeight:Double = 270
+        if(UIDevice.currentDevice().userInterfaceIdiom == .Pad){
+            keyboardHeight = 352
+        }
+
+            let keyboardWidth:Double = Double(UIScreen.mainScreen().bounds.width)
+            for (rowIndex, keyRow) in enumerate(keyRows) {
+                var lastKeyView: UIView? = nil
+                var lastX = 0.0
+                for (keyIndex, key) in enumerate(keyRow) {
+                    
+                    //key.setTranslatesAutoresizingMaskIntoConstraints(false)
+                    //key.frame = CGRectMake(100, 100, 100, 100)
+                    //continue
+                    
+                    var relativeWidth: CGFloat = 0.0;
+                    switch key.type! {
+                    case .ModeChange:
+                        relativeWidth = 1/8
+                    case .KeyboardChange:
+                        relativeWidth = 1/8
+                    case .Space:
+                        relativeWidth = 4/8
+                    case .Return:
+                        relativeWidth = 2/8
+                    case .BlankType1:
+                        relativeWidth = 1/20
+                    //case .Backspace:
+                    //    relativeWidth = 2/10
+                    default:
+                        //relativeWidth = 1/10
+                        relativeWidth = 0.0
+                    }
+                    var x = lastX
+                    var y = 0.0
+                    var width = 0.0
+                    var height = 0.0
+                    switch rowIndex {
+                    case 0:
+                        y = keyboardHeight * 0.18
+                    default:
+                        y = keyboardHeight * 0.18 + Double(rowIndex) * keyboardHeight * (1 - 0.18)/4
+                    }
+                    height = keyboardHeight * (1 - 0.18)/4
+                    if(relativeWidth == 0.0){
+                        width = keyboardWidth / Double(keyRow.count)
+                    }else{
+                        width = keyboardWidth * Double(relativeWidth)
+                    }
+                    lastX = lastX + width
+                    //key.backgroundColor = UIColor.randomColor()
+                    key.frame = CGRectMake(CGFloat(x), CGFloat(y), CGFloat(width), CGFloat(height))
+                    //key.setupLayout()
+                }
+            }
+    }
+    
     
     ///MARK: Layout
     override public func updateConstraints() {
         super.updateConstraints()
         println("updating constraints in keyboardView")
+        return
         
         if !layoutConstrained {
             var lastRowView: UIView? = nil
+            var lastX = 0.0
+            let keyboardHeight:Double = 270
+            let keyboardWidth:Double = Double(UIScreen.mainScreen().bounds.width)
             for (rowIndex, keyRow) in enumerate(keyRows) {
                 var lastKeyView: UIView? = nil
                 for (keyIndex, key) in enumerate(keyRow) {
@@ -109,9 +183,15 @@ public class KeyboardView: UIView {
                         relativeWidth = 4/8
                     case .Return:
                         relativeWidth = 2/8
+                    case .BlankType1:
+                        relativeWidth = 1/20
+                    //case .Backspace:
+                    //    relativeWidth = 2/10
                     default:
+                        //relativeWidth = 1/10
                         relativeWidth = 0.0
                     }
+                    
                     
                     if let lastView = lastKeyView {
                         let left = NSLayoutConstraint(item: key, attribute: NSLayoutAttribute.Left, relatedBy: NSLayoutRelation.Equal, toItem: lastView, attribute: NSLayoutAttribute.Right, multiplier: 1.0, constant: 0.0)
@@ -135,7 +215,7 @@ public class KeyboardView: UIView {
 
                             self.addConstraints([top, height])
                         } else {
-                            let topEdge =  NSLayoutConstraint(item: key, attribute: .Top, relatedBy:.Equal, toItem: self, attribute: .Top, multiplier: 1.0, constant: 0.0)
+                            let topEdge =  NSLayoutConstraint(item: key, attribute: .Top, relatedBy:.Equal, toItem: self, attribute: .Bottom, multiplier: 0.18, constant: 0)
                             self.addConstraint(topEdge)
                         }
                         
@@ -158,8 +238,12 @@ public class KeyboardView: UIView {
         }
     }
     
-    private func addKey(key: KeyboardKeyView, row: Int) {
-        key.addTarget(self, action: "keyPressed:", forControlEvents: .TouchUpInside)
+    public func addKey(key: KeyboardKeyView, row: Int) {
+        if((key.type) != nil && key.type != .BlankType1){
+        key.addTarget(self, action: "keyPressed:", forControlEvents: UIControlEvents.TouchUpInside)
+        key.addTarget(self, action: "keyPressedTouchDown:", forControlEvents: UIControlEvents.TouchDown)
+        key.addTarget(self, action: "keyPressedTouchUpOutside:", forControlEvents: UIControlEvents.TouchUpOutside)
+        }
         if keyRows.count <= row {
             for i in self.keyRows.count...row {
                 keyRows.append(Array<KeyboardKeyView>())
@@ -193,7 +277,50 @@ public class KeyboardView: UIView {
     }
     
     ///MARK: Private Helper Methods
-    func keyPressed(sender: AnyObject!) {
+    func keyUp(sender: AnyObject!) {
+        if let key: KeyboardKeyView = sender as? KeyboardKeyView {
+            if let type = key.type {
+                switch type {
+                case .Backspace:
+                    delegate?.backspaceKeyUp!(key)
+                default:
+                    delegate?.keyPressed!(key)
+                }
+            }
+        }
+    }
+    func keyPressedTouchUpOutside(sender: AnyObject!) {
+        if let key: KeyboardKeyView = sender as? KeyboardKeyView {
+            if let type = key.type {
+                switch type {
+                //case .Character:
+                //    delegate?.keyPressed!(key)
+                //case .SpecialCharacter:
+                //    delegate?.specialKeyPressed!(key)
+                //case .Shift:
+                //    delegate?.shiftKeyPressed!(key)
+                case .Backspace:
+                    delegate?.backspaceKeyUp!(key)
+                //case .ModeChange:
+                //    delegate?.modeChangeKeyPressed!(key)
+                //case .KeyboardChange:
+                //    delegate?.nextKeyboardKeyPressed!(key)
+                //case .Return:
+                //    delegate?.returnKeyPressed!(key)
+                //case .Space:
+                //    delegate?.spaceKeyPressed!(key)
+                //default:
+                //    delegate?.keyPressed!(key)
+                //}
+                default:
+                    let a=1
+                }
+            }
+        }
+    }
+    
+    func keyPressedTouchDown(sender: AnyObject!) {
+        delegate?.keyClickSound!()
         if let key: KeyboardKeyView = sender as? KeyboardKeyView {
             if let type = key.type {
                 switch type {
@@ -207,14 +334,43 @@ public class KeyboardView: UIView {
                     delegate?.backspaceKeyPressed!(key)
                 case .ModeChange:
                     delegate?.modeChangeKeyPressed!(key)
-                case .KeyboardChange:
-                    delegate?.nextKeyboardKeyPressed!(key)
+                //case .KeyboardChange:
+                //    delegate?.nextKeyboardKeyPressed!(key)
                 case .Return:
                     delegate?.returnKeyPressed!(key)
                 case .Space:
                     delegate?.spaceKeyPressed!(key)
                 default:
                     delegate?.keyPressed!(key)
+                }
+            }
+        }
+    }
+    func keyPressed(sender: AnyObject!) {
+        if let key: KeyboardKeyView = sender as? KeyboardKeyView {
+            if let type = key.type {
+                switch type {
+                //case .Character:
+                //    delegate?.keyPressed!(key)
+                //case .SpecialCharacter:
+                //    delegate?.specialKeyPressed!(key)
+                //case .Shift:
+                //    delegate?.shiftKeyPressed!(key)
+                case .Backspace:
+                    delegate?.backspaceKeyUp!(key)
+                //case .ModeChange:
+                //    delegate?.modeChangeKeyPressed!(key)
+                case .KeyboardChange:
+                    delegate?.nextKeyboardKeyPressed!(key)
+                //case .Return:
+                //    delegate?.returnKeyPressed!(key)
+                //case .Space:
+                //    delegate?.spaceKeyPressed!(key)
+                //default:
+                //    delegate?.keyPressed!(key)
+                //}
+                default:
+                    let a=1
                 }
             }
         }
@@ -237,5 +393,10 @@ public class KeyboardView: UIView {
                 key.removeFromSuperview()
             }
         }
+    }
+    
+    override public func layoutSubviews() {
+        super.layoutSubviews()
+        self.setupLayout()
     }
 }
