@@ -42,8 +42,8 @@ public class KeyboardView: UIView {
     private var layoutConstrained: Bool = false
     
     ///MARK: Setup
-    override init() {
-        super.init()
+    convenience init() {
+        self.init()
         setup()
     }
    
@@ -52,7 +52,7 @@ public class KeyboardView: UIView {
         setup()
     }
     
-    required public init(coder aDecoder: NSCoder) {
+    required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         setup()
     }
@@ -60,7 +60,7 @@ public class KeyboardView: UIView {
     func setup() {
         keyRows = Array<Array<KeyboardKeyView>>()
         self.currentLanguage = KeyboardLanguage.English_US
-        self.setTranslatesAutoresizingMaskIntoConstraints(false)
+        self.translatesAutoresizingMaskIntoConstraints = false
     }
     
     public func reloadKeys() {
@@ -104,10 +104,10 @@ public class KeyboardView: UIView {
         }
 
             let keyboardWidth:Double = Double(UIScreen.mainScreen().bounds.width)
-            for (rowIndex, keyRow) in enumerate(keyRows) {
+            for (rowIndex, keyRow) in keyRows.enumerate() {
                 var lastKeyView: UIView? = nil
                 var lastX = 0.0
-                for (keyIndex, key) in enumerate(keyRow) {
+                for (keyIndex, key) in keyRow.enumerate() {
                     
                     //key.setTranslatesAutoresizingMaskIntoConstraints(false)
                     //key.frame = CGRectMake(100, 100, 100, 100)
@@ -131,7 +131,7 @@ public class KeyboardView: UIView {
                         //relativeWidth = 1/10
                         relativeWidth = 0.0
                     }
-                    var x = lastX
+                    let x = lastX
                     var y = 0.0
                     var width = 0.0
                     var height = 0.0
@@ -159,7 +159,7 @@ public class KeyboardView: UIView {
     ///MARK: Layout
     override public func updateConstraints() {
         super.updateConstraints()
-        println("updating constraints in keyboardView")
+        print("updating constraints in keyboardView")
         return
         
         if !layoutConstrained {
@@ -167,11 +167,11 @@ public class KeyboardView: UIView {
             var lastX = 0.0
             let keyboardHeight:Double = 270
             let keyboardWidth:Double = Double(UIScreen.mainScreen().bounds.width)
-            for (rowIndex, keyRow) in enumerate(keyRows) {
+            for (rowIndex, keyRow) in keyRows.enumerate() {
                 var lastKeyView: UIView? = nil
-                for (keyIndex, key) in enumerate(keyRow) {
+                for (keyIndex, key) in keyRow.enumerate() {
                     
-                    key.setTranslatesAutoresizingMaskIntoConstraints(false)
+                    key.translatesAutoresizingMaskIntoConstraints = false
                     
                     var relativeWidth: CGFloat = 0.0;
                     switch key.type! {
@@ -377,7 +377,7 @@ public class KeyboardView: UIView {
     }
     
     private func constraintsForKey(key: KeyboardKeyView, lastKeyView: KeyboardKeyView, lastRowView: KeyboardKeyView) -> [NSLayoutConstraint] {
-        var constraints: [NSLayoutConstraint] = []
+        let constraints: [NSLayoutConstraint] = []
         
         return constraints
     }
@@ -387,9 +387,9 @@ public class KeyboardView: UIView {
         for row in keyRows {
             for key in row {
                 if key.hasAmbiguousLayout() {
-                    println(" *** Ambiguous layout: \(key) \n")
+                    print(" *** Ambiguous layout: \(key) \n")
                 }
-                key.removeConstraints(key.constraints())
+                key.removeConstraints(key.constraints)
                 key.removeFromSuperview()
             }
         }
